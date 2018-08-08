@@ -1,8 +1,9 @@
 import React from "react";
-import { CuriRouter, Emitted } from "@curi/router";
+import { CuriRouter, Response, Emitted } from "@curi/router";
 export declare type CuriRenderFn = (props: Emitted) => React.ReactNode;
 export interface RouterProps {
     children: CuriRenderFn;
+    suspend?: boolean;
 }
 export interface RouterState {
     emitted: Emitted;
@@ -11,6 +12,8 @@ export default function curiProvider(router: CuriRouter): {
     new (props: RouterProps): {
         stopResponding: () => void;
         removed: boolean;
+        current: Response;
+        shouldComponentUpdate(nextProps: RouterProps, nextState: RouterState): boolean;
         componentDidMount(): void;
         setupRespond(router: CuriRouter): void;
         componentWillUnmount(): void;
@@ -25,7 +28,6 @@ export default function curiProvider(router: CuriRouter): {
         refs: {
             [key: string]: React.ReactInstance;
         };
-        shouldComponentUpdate?(nextProps: Readonly<RouterProps>, nextState: Readonly<RouterState>, nextContext: any): boolean;
         componentDidCatch?(error: Error, errorInfo: React.ErrorInfo): void;
         getSnapshotBeforeUpdate?(prevProps: Readonly<RouterProps>, prevState: Readonly<RouterState>): any;
         componentDidUpdate?(prevProps: Readonly<RouterProps>, prevState: Readonly<RouterState>, snapshot?: any): void;

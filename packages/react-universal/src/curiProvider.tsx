@@ -1,12 +1,17 @@
 import React from "react";
 import { Provider } from "./Context";
 
-import { CuriRouter, Emitted } from "@curi/router";
+import {
+  CuriRouter,
+  Response,
+  Emitted,
+} from "@curi/router";
 
 export type CuriRenderFn = (props: Emitted) => React.ReactNode;
 
 export interface RouterProps {
   children: CuriRenderFn;
+  suspend?: boolean;
 }
 
 export interface RouterState {
@@ -17,6 +22,7 @@ export default function curiProvider(router: CuriRouter) {
   return class Router extends React.Component<RouterProps, RouterState> {
     stopResponding: () => void;
     removed: boolean;
+    current: Response;
 
     constructor(props: RouterProps) {
       super(props);
@@ -26,6 +32,14 @@ export default function curiProvider(router: CuriRouter) {
           router
         }
       };
+      this.current = this.state.emitted.response;
+    }
+
+    shouldComponentUpdate(nextProps: RouterProps, nextState: RouterState) {
+      if (nextProps.suspend) {
+        return nextState.emitted.response === this.current;
+      }
+      return true;
     }
 
     componentDidMount() {
@@ -35,8 +49,15 @@ export default function curiProvider(router: CuriRouter) {
     setupRespond(router: CuriRouter) {
       this.stopResponding = router.observe(
         (emitted: Emitted) => {
+          this.current = emitted.response;
           if (!this.removed) {
-            this.setState({ emitted });
+            if (this.props.suspend) {
+              setTimeout(() => {
+                this.setState({ emitted });
+              });
+            } else {
+              this.setState({ emitted });
+            }
           }
         },
         { initial: false }

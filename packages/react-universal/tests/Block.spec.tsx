@@ -5,7 +5,7 @@ import ReactDOM from "react-dom";
 import { curi } from "@curi/router";
 import InMemory from "@hickory/in-memory";
 
-// resolved by jest
+// @ts-ignore (resolved by jest)
 import { curiProvider, Block } from "@curi/react-universal";
 
 describe("Block", () => {

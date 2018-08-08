@@ -5,7 +5,7 @@ import InMemory from "@hickory/in-memory";
 import { curi } from "@curi/router";
 import activeInteraction from "@curi/route-active";
 
-// resolved by jest
+// @ts-ignore (resolved by jest)
 import { curiProvider, Active } from "@curi/react-universal";
 
 describe("<Active>", () => {

@@ -4,7 +4,7 @@ import ReactDOM from "react-dom";
 import { curi } from "@curi/router";
 import InMemory from "@hickory/in-memory";
 
-// resolved by jest
+// @ts-ignore (resolved by jest)
 import { curiProvider, Curious } from "@curi/react-universal";
 
 describe("curiProvider()", () => {
@@ -18,8 +18,6 @@ describe("curiProvider()", () => {
   afterEach(() => {
     ReactDOM.unmountComponentAtNode(node);
   });
-
-  describe("router argument", () => {});
 
   describe("children prop", () => {
     it("calls children() function when it renders", () => {
@@ -37,7 +35,6 @@ describe("curiProvider()", () => {
     it("re-renders when the location changes", done => {
       const history = InMemory();
       const router = curi(history, routes);
-      let pushedHistory = false;
       let firstCall = true;
       const fn = jest.fn(({ response }) => {
         if (firstCall) {
