@@ -5,7 +5,7 @@ import matchLocation from "./matchLocation";
 import resolveMatchedRoute from "./resolveMatchedRoute";
 import createRoute from "./route";
 
-import { History, PendingNavigation } from "@hickory/root";
+import { History, PendingNavigation, Action } from "@hickory/root";
 
 import { RouteDescriptor, InternalRoute, ResolveResults } from "./types/route";
 import { Response } from "./types/response";
@@ -20,7 +20,9 @@ import {
   RemoveObserver,
   CurrentResponse,
   Navigation,
-  NavigationDetails
+  NavigationDetails,
+  Cancellable,
+  RemoveCancellable
 } from "./types/curi";
 
 export default function createRouter(
@@ -56,6 +58,7 @@ export default function createRouter(
 
   let observers: Array<Observer> = [];
   const oneTimers: Array<Observer> = [];
+  let cancellers: Array<Cancellable> = [];
 
   function setupRoutesAndInteractions(
     routeArray?: Array<RouteDescriptor>
@@ -82,10 +85,7 @@ export default function createRouter(
   }
 
   function navigationHandler(pendingNav: PendingNavigation): void {
-    if (activeNavigation) {
-      activeNavigation.cancel(pendingNav.action);
-      activeNavigation.cancelled = true;
-    }
+    cancelActiveNavigation(pendingNav.action);
     activeNavigation = pendingNav;
 
     const navigation: Navigation = {
@@ -122,6 +122,7 @@ export default function createRouter(
     if (match.route.sync) {
       finalizeResponseAndEmit(match as Match, pendingNav, navigation, null);
     } else {
+      activateCancellers(pendingNav.action);
       resolveMatchedRoute(match as Match).then((resolved: ResolveResults) => {
         if (pendingNav.cancelled) {
           return;
@@ -142,6 +143,7 @@ export default function createRouter(
     navigation: Navigation,
     resolved: ResolveResults | null
   ) {
+    deactivateCancellers();
     const response = finishResponse(match, routeInteractions, resolved);
     pending.finish();
     emitImmediate(response, navigation);
@@ -185,6 +187,40 @@ export default function createRouter(
     }
   }
 
+  let canCancel: boolean;
+  function activateCancellers(action: Action) {
+    if (cancellers.length) {
+      canCancel = true;
+      const cancel = () => {
+        cancelActiveNavigation(action);
+        deactivateCancellers();
+        if (cancelCallback) {
+          cancelCallback();
+        }
+        resetCallbacks();
+      };
+      cancellers.forEach(fn => {
+        fn(cancel);
+      });
+    }
+  }
+
+  function deactivateCancellers() {
+    if (canCancel) {
+      canCancel = false;
+      cancellers.forEach(fn => {
+        fn();
+      });
+    }
+  }
+
+  function cancelActiveNavigation(action: Action) {
+    if (activeNavigation) {
+      activeNavigation.cancel(action);
+      activeNavigation.cancelled = true;
+    }
+  }
+
   const router: CuriRouter = {
     route: routeInteractions,
     history,
@@ -209,6 +245,14 @@ export default function createRouter(
       } else {
         oneTimers.push(fn);
       }
+    },
+    whileNavigating(fn: Cancellable): RemoveCancellable {
+      cancellers.push(fn);
+      return () => {
+        cancellers = cancellers.filter(can => {
+          return can !== fn;
+        });
+      };
     },
     refresh(routes?: Array<RouteDescriptor>) {
       refreshing = true;

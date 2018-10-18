@@ -30,5 +30,8 @@ export {
   ResponseHandlerOptions,
   RemoveObserver,
   Navigation,
-  CurrentResponse
+  CurrentResponse,
+  Cancellable,
+  CancelActiveNavigation,
+  RemoveCancellable
 } from "./curi";

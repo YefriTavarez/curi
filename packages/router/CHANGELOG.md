@@ -1,3 +1,7 @@
+## Next
+
+* Add `router.whileNavigating()` function, which let's a function know what the router is navigating and gives it the opportunity to cancel the navigation.
+
 ## 1.0.4
 
 * Add `sideEffects: false` hint for Webpack.
